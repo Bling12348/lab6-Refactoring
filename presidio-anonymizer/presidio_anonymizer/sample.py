@@ -1,32 +1,52 @@
 from presidio_anonymizer import AnonymizerEngine
 from presidio_anonymizer.entities import RecognizerResult, OperatorConfig
+from typing import Optional
 
-def sample_run_anonymizer():
+
+def sample_run_anonymizer(
+    text: Optional[str] = None,
+    person_start: Optional[int] = None,
+    person_end: Optional[int] = None
+):
+    """
+    Refactored function to allow testability.
+
+    If parameters are provided, they are used.
+    Otherwise, fall back to input().
+    """
     # Initialize the engine
     engine = AnonymizerEngine()
 
-    # Invoke the anonymize function with the text, 
-    # analyzer results (potentially coming from presidio-analyzer) and
-    # Operators to get the anonymization output:
+    # Use provided values or prompt user for input
+    if text is None:
+        text = input("text: ")
+    if person_start is None:
+        person_start = int(input("start: "))
+    if person_end is None:
+        person_end = int(input("end: "))
+
+    # Prepare the RecognizerResult
+    analyzer_results = [
+        RecognizerResult(
+            entity_type="PERSON",
+            start=person_start,
+            end=person_end,
+            score=0.8
+        )
+    ]
+
+    operators = {"PERSON": OperatorConfig("replace", {"new_value": "BIP"})}
+
+    # Run anonymizer
     result = engine.anonymize(
-        text=input("text: "),
-        analyzer_results=[RecognizerResult(entity_type="PERSON", start=int(input("start: ")), end=int(input("end: ")), score=0.8)],
-        operators={"PERSON": OperatorConfig("replace", {"new_value": "BIP"})}
+        text=text,
+        analyzer_results=analyzer_results,
+        operators=operators
     )
 
-    print(result)
+    print(result)  # preserve original behavior
+    return result  # return for testability
 
-    # input should be:
-    # text: My name is Bond.
-    # start: 11
-    # end: 15
-    # 
-    # output should be:
-    # text: My name is BIP.
-    # items:
-    # [
-    #     {'start': 11, 'end': 14, 'entity_type': 'PERSON', 'text': 'BIP', 'operator': 'replace'}
-    # ]
 
-if __name__ == "__main__": 
-    sample_run_anonymizer();
+if __name__ == "__main__":
+    sample_run_anonymizer()
